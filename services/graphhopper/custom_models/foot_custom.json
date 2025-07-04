@@ -1,0 +1,15 @@
+{
+  "distance_influence": 90,
+  "priority": [
+    {
+      "if": "foot_access == false",
+      "multiply_by": 0
+    }
+  ],
+  "speed": [
+    {
+      "if": "foot_access == true",
+      "limit_to": 5
+    }
+  ]
+}

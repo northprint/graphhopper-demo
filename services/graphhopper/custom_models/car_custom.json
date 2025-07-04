@@ -1,0 +1,15 @@
+{
+  "distance_influence": 70,
+  "priority": [
+    {
+      "if": "car_access == false",
+      "multiply_by": 0
+    }
+  ],
+  "speed": [
+    {
+      "if": "car_access == true",
+      "limit_to": 130
+    }
+  ]
+}

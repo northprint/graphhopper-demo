@@ -1,0 +1,35 @@
+graphhopper:
+  # OSMデータファイルのパス
+  datareader.file: /graphhopper/data/map.osm.pbf
+  
+  # グラフキャッシュの保存場所
+  graph.location: /graphhopper/graph-cache
+  
+  # 標高データを無効化（デモ用）
+  graph.elevation.provider: ""
+  
+  # エンコード値の設定（最小限）
+  graph.encoded_values: car_access, car_average_speed, road_class, road_environment, max_speed, surface
+  
+  # プロファイル設定（最小限）
+  profiles:
+    - name: car
+      vehicle: car
+      weighting: shortest
+      
+  # CH (Contraction Hierarchies) を有効化してパフォーマンス向上
+  profiles_ch:
+    - profile: car
+      
+  # ルーティングの詳細設定
+  routing:
+    max_visited_nodes: 1000000
+
+# サーバー設定
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+      bind_host: 0.0.0.0
+  request_log:
+    appenders: []

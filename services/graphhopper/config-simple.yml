@@ -1,0 +1,21 @@
+graphhopper:
+  datareader.file: /graphhopper/data/map.osm.pbf
+  graph.location: /graphhopper/graph-cache
+  
+  # エンコーダー設定
+  graph.encoded_values: car_access, car_average_speed
+  
+  # プロファイル設定
+  profiles:
+    - name: car
+      weighting: shortest
+      
+server:
+  application_connectors:
+    - type: http
+      port: 8989
+      bind_host: 0.0.0.0
+  admin_connectors:
+    - type: http
+      port: 8081
+      bind_host: 0.0.0.0

@@ -1,0 +1,40 @@
+services:
+  graphhopper:
+    build:
+      context: ./services/graphhopper
+      dockerfile: Dockerfile
+    container_name: graphhopper
+    ports:
+      - "8989:8989"
+    volumes:
+      - ./data:/graphhopper/data
+    environment:
+      - JAVA_OPTS=-Xmx2g -Xms1g
+    networks:
+      - graphhopper-network
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: development
+    container_name: graphhopper-web
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.svelte-kit
+    environment:
+      - NODE_ENV=development
+      - PUBLIC_GRAPHHOPPER_URL=http://localhost:8989
+      - VITE_GRAPHHOPPER_URL=http://graphhopper:8989
+    networks:
+      - graphhopper-network
+    depends_on:
+      - graphhopper
+    command: pnpm dev --host
+
+networks:
+  graphhopper-network:
+    driver: bridge

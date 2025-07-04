@@ -1,0 +1,13 @@
+{
+  "name": "mock-graphhopper",
+  "version": "1.0.0",
+  "description": "Mock GraphHopper server for demo",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5"
+  }
+}
