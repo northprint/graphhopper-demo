@@ -179,7 +179,7 @@ jobs:
         echo "Getting API URL from GraphHopperApiStack..."
         API_URL=$(aws cloudformation describe-stacks \
           --stack-name GraphHopperApiStack \
-          --query "Stacks[0].Outputs[?OutputKey=='AlbUrl'].OutputValue" \
+          --query "Stacks[0].Outputs[?OutputKey=='ApiUrl'].OutputValue" \
           --output text 2>/dev/null)
         
         if [ -z "$API_URL" ] || [ "$API_URL" == "None" ]; then
