@@ -31,5 +31,9 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
 # メモリ設定
 ENV JAVA_OPTS="-Xmx1g -Xms512m"
 
+# エントリーポイントスクリプトをコピー
+COPY services/graphhopper/entrypoint.sh /graphhopper/entrypoint.sh
+RUN chmod +x /graphhopper/entrypoint.sh
+
 # GraphHopperを起動
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar graphhopper.jar server config.yml"]
+ENTRYPOINT ["/graphhopper/entrypoint.sh"]
