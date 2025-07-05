@@ -4,11 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ main ]
-    paths:
-      - 'services/graphhopper/**'
-      - 'apps/web/**'
-      - 'data/**'
-      - '.github/workflows/build-and-push.yml'
 
 env:
   AWS_REGION: ap-northeast-1
