@@ -1,4 +1,4 @@
-name: Deploy to Cloud
+name: Deploy to AWS
 
 on:
   push:
@@ -6,70 +6,165 @@ on:
   workflow_dispatch:
 
 env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  AWS_REGION: ap-northeast-1
+  ECR_REPOSITORY: graphhopper-demo
 
 jobs:
-  build-and-push:
+  build-and-push-ecr:
+    name: Build and Push to ECR
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    outputs:
+      image-tag: ${{ steps.image.outputs.tag }}
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
     
-    - name: Setup Docker Buildx
-      uses: docker/setup-buildx-action@v3
-    
-    - name: Log in to Container Registry
-      uses: docker/login-action@v3
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
       with:
-        registry: ${{ env.REGISTRY }}
-        username: ${{ github.actor }}
-        password: ${{ secrets.GITHUB_TOKEN }}
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
     
-    - name: Build and push GraphHopper image
-      uses: docker/build-push-action@v5
-      with:
-        context: ./services/graphhopper
-        push: true
-        tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/graphhopper:latest
-        cache-from: type=gha
-        cache-to: type=gha,mode=max
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Build, tag, and push image to Amazon ECR
+      id: image
+      env:
+        ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+        IMAGE_TAG: ${{ github.sha }}
+      run: |
+        cd services/graphhopper
+        docker build -f Dockerfile.production -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+        docker tag $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+        echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-  deploy-frontend:
+  deploy-infrastructure:
+    name: Deploy Infrastructure with CDK
     runs-on: ubuntu-latest
-    needs: build-and-push
+    needs: build-and-push-ecr
     
     steps:
     - name: Checkout
       uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
     
     - name: Setup pnpm
       uses: pnpm/action-setup@v2
       with:
         version: 9
     
+    - name: Install CDK dependencies
+      run: |
+        cd infrastructure
+        pnpm install
+        npm install -g aws-cdk
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Deploy CDK stacks
+      run: |
+        cd infrastructure
+        cdk deploy --all --require-approval never
+      env:
+        CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+        CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+
+  update-ecs-service:
+    name: Update ECS Service
+    runs-on: ubuntu-latest
+    needs: [build-and-push-ecr, deploy-infrastructure]
+    
+    steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Force new deployment
+      run: |
+        aws ecs update-service \
+          --cluster graphhopper-cluster \
+          --service graphhopper-api \
+          --force-new-deployment \
+          --region ${{ env.AWS_REGION }}
+
+  build-and-deploy-frontend:
+    name: Build and Deploy Frontend
+    runs-on: ubuntu-latest
+    needs: deploy-infrastructure
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: '20'
-        cache: 'pnpm'
+    
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v2
+      with:
+        version: 9
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Get CloudFront distribution URL
+      id: get-cf-url
+      run: |
+        CF_URL=$(aws cloudformation describe-stacks \
+          --stack-name GraphHopperFrontendStack \
+          --query "Stacks[0].Outputs[?OutputKey=='DistributionUrl'].OutputValue" \
+          --output text)
+        echo "cf_url=$CF_URL" >> $GITHUB_OUTPUT
     
     - name: Install dependencies
       run: pnpm install
     
     - name: Build frontend
-      run: pnpm build
-      working-directory: ./apps/web
-      env:
-        PUBLIC_GRAPHHOPPER_URL: ${{ secrets.GRAPHHOPPER_API_URL }}
-    
-    # Vercelへのデプロイ（例）
-    - name: Deploy to Vercel
       run: |
-        npm i -g vercel
-        vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
-      working-directory: ./apps/web
+        cd apps/web
+        echo "PUBLIC_GRAPHHOPPER_URL=${{ steps.get-cf-url.outputs.cf_url }}/api" > .env.production
+        pnpm build
+    
+    - name: Deploy to S3
+      run: |
+        BUCKET_NAME=$(aws cloudformation describe-stacks \
+          --stack-name GraphHopperFrontendStack \
+          --query "Stacks[0].Outputs[?OutputKey=='BucketName'].OutputValue" \
+          --output text)
+        
+        aws s3 sync apps/web/.svelte-kit/output s3://$BUCKET_NAME --delete
+    
+    - name: Invalidate CloudFront
+      run: |
+        DISTRIBUTION_ID=$(aws cloudformation describe-stacks \
+          --stack-name GraphHopperFrontendStack \
+          --query "Stacks[0].Outputs[?OutputKey=='DistributionId'].OutputValue" \
+          --output text)
+        
+        aws cloudfront create-invalidation \
+          --distribution-id $DISTRIBUTION_ID \
+          --paths "/*"
