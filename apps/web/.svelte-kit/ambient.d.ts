@@ -61,6 +61,7 @@ declare module '$env/static/private' {
 	export const npm_package_scripts_check_watch: string;
 	export const COMMAND_MODE: string;
 	export const ASDF_INSTALL_VERSION: string;
+	export const npm_package_devDependencies__sveltejs_adapter_static: string;
 	export const PNPM_SCRIPT_SRC_DIR: string;
 	export const npm_config_strict_peer_dependencies: string;
 	export const SSH_AUTH_SOCK: string;
@@ -193,6 +194,7 @@ declare module '$env/dynamic/private' {
 		npm_package_scripts_check_watch: string;
 		COMMAND_MODE: string;
 		ASDF_INSTALL_VERSION: string;
+		npm_package_devDependencies__sveltejs_adapter_static: string;
 		PNPM_SCRIPT_SRC_DIR: string;
 		npm_config_strict_peer_dependencies: string;
 		SSH_AUTH_SOCK: string;

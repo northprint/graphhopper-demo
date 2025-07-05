@@ -24,6 +24,7 @@ const graphhopperStack = new GraphHopperStack(app, 'GraphHopperApiStack', {
   env,
   vpc: networkStack.vpc,
   alb: networkStack.alb,
+  certificate: networkStack.certificate,
   description: 'GraphHopper Demo - API Service (ECS Fargate)',
 });
 

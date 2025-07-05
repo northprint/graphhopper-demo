@@ -7,11 +7,13 @@ import * as logs from 'aws-cdk-lib/aws-logs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as s3deploy from 'aws-cdk-lib/aws-s3-deployment';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
 
 interface GraphHopperStackProps extends cdk.StackProps {
   vpc: ec2.Vpc;
   alb: elbv2.ApplicationLoadBalancer;
+  certificate?: acm.Certificate;
 }
 
 export class GraphHopperStack extends cdk.Stack {
@@ -21,18 +23,12 @@ export class GraphHopperStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GraphHopperStackProps) {
     super(scope, id, props);
 
-    // ECRリポジトリ
-    const repository = new ecr.Repository(this, 'Repository', {
-      repositoryName: 'graphhopper-demo',
-      lifecycleRules: [
-        {
-          maxImageCount: 10,
-          description: 'Keep last 10 images',
-        },
-      ],
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-      emptyOnDelete: true,
-    });
+    // ECRリポジトリ（既存のものを使用）
+    const repository = ecr.Repository.fromRepositoryName(
+      this,
+      'Repository',
+      'graphhopper-demo'
+    );
 
     // OSMデータ用S3バケット（大きなデータの場合）
     const dataBucket = new s3.Bucket(this, 'DataBucket', {
@@ -155,12 +151,24 @@ export class GraphHopperStack extends cdk.Stack {
       scaleOutCooldown: cdk.Duration.seconds(60),
     });
 
-    // ALBターゲットグループ
-    const targetGroup = new elbv2.ApplicationTargetGroup(this, 'TargetGroup', {
-      vpc: props.vpc,
+    // サービスセキュリティグループの設定
+    this.service.connections.allowFrom(props.alb, ec2.Port.tcp(8989), 'Allow ALB to access service');
+
+    // ALBリスナー設定
+    // HTTPリスナー
+    const httpListener = props.alb.addListener('GraphHopperHttpListener', {
+      port: 80,
+      defaultAction: elbv2.ListenerAction.fixedResponse(404, {
+        contentType: 'text/plain',
+        messageBody: 'Not Found',
+      }),
+    });
+
+    // HTTPリスナーにルールを追加
+    httpListener.addTargets('GraphHopperHttpTargets', {
       port: 8989,
       protocol: elbv2.ApplicationProtocol.HTTP,
-      targetType: elbv2.TargetType.IP,
+      targets: [this.service],
       healthCheck: {
         path: '/health',
         interval: cdk.Duration.seconds(30),
@@ -171,22 +179,43 @@ export class GraphHopperStack extends cdk.Stack {
       deregistrationDelay: cdk.Duration.seconds(30),
     });
 
-    // サービスをターゲットグループに追加
-    this.service.attachToApplicationTargetGroup(targetGroup);
+    // HTTPSリスナー（証明書がある場合）
+    if (props.certificate) {
+      const httpsListener = props.alb.addListener('GraphHopperHttpsListener', {
+        port: 443,
+        certificates: [props.certificate],
+        defaultAction: elbv2.ListenerAction.fixedResponse(404, {
+          contentType: 'text/plain',
+          messageBody: 'Not Found',
+        }),
+      });
 
-    // ALBリスナールール
-    const listener = props.alb.listeners[0] || props.alb.addListener('Listener', {
-      port: 80,
-      defaultAction: elbv2.ListenerAction.fixedResponse(404),
-    });
+      // HTTPSリスナーにルールを追加
+      httpsListener.addTargets('GraphHopperHttpsTargets', {
+        port: 8989,
+        protocol: elbv2.ApplicationProtocol.HTTP,
+        targets: [this.service],
+        healthCheck: {
+          path: '/health',
+          interval: cdk.Duration.seconds(30),
+          timeout: cdk.Duration.seconds(10),
+          healthyThresholdCount: 2,
+          unhealthyThresholdCount: 3,
+        },
+        deregistrationDelay: cdk.Duration.seconds(30),
+      });
 
-    listener.addTargetGroups('GraphHopperTarget', {
-      targetGroups: [targetGroup],
-      priority: 10,
-      conditions: [
-        elbv2.ListenerCondition.pathPatterns(['/route*', '/health*', '/info*']),
-      ],
-    });
+      // HTTPからHTTPSへのリダイレクトを設定
+      httpListener.addAction('RedirectToHttps', {
+        action: elbv2.ListenerAction.redirect({
+          protocol: 'HTTPS',
+          port: '443',
+          permanent: true,
+        }),
+        priority: 1,
+        conditions: [elbv2.ListenerCondition.pathPatterns(['*'])],
+      });
+    }
 
     // API URL
     this.apiUrl = `http://${props.alb.loadBalancerDnsName}`;

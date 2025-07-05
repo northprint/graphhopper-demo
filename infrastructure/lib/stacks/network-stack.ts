@@ -56,32 +56,7 @@ export class NetworkStack extends cdk.Stack {
         domainName: `api.${domainName}`,
         validation: acm.CertificateValidation.fromDns(this.hostedZone),
       });
-
-      // HTTPSリスナー
-      this.alb.addListener('HttpsListener', {
-        port: 443,
-        certificates: [this.certificate],
-        defaultAction: elbv2.ListenerAction.fixedResponse(404, {
-          contentType: 'text/plain',
-          messageBody: 'Not Found',
-        }),
-      });
     }
-
-    // HTTPリスナー（HTTPSへのリダイレクト）
-    this.alb.addListener('HttpListener', {
-      port: 80,
-      defaultAction: domainName
-        ? elbv2.ListenerAction.redirect({
-            protocol: 'HTTPS',
-            port: '443',
-            permanent: true,
-          })
-        : elbv2.ListenerAction.fixedResponse(404, {
-            contentType: 'text/plain',
-            messageBody: 'Not Found',
-          }),
-    });
 
     // 出力
     new cdk.CfnOutput(this, 'VpcId', {
