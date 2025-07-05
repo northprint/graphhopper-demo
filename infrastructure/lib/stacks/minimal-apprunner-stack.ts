@@ -53,9 +53,9 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         protocol: 'HTTP',
         path: '/health',
         interval: 20,
-        timeout: 5,
+        timeout: 10,
         healthyThreshold: 1,
-        unhealthyThreshold: 5,
+        unhealthyThreshold: 10,
       },
     });
 
