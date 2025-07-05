@@ -34,7 +34,7 @@ jobs:
         ECR_REPOSITORY: graphhopper-api
         IMAGE_TAG: latest
       run: |
-        docker build -f services/graphhopper/Dockerfile.debug -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
+        docker build -f services/graphhopper/Dockerfile.minimal -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG .
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "API image pushed: $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
     
