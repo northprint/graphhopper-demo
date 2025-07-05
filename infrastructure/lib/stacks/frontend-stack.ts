@@ -22,8 +22,8 @@ export class FrontendStack extends cdk.Stack {
       bucketName: `graphhopper-frontend-${cdk.Stack.of(this).account}`,
       websiteIndexDocument: 'index.html',
       websiteErrorDocument: 'error.html',
-      publicReadAccess: false,
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      publicReadAccess: true,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ACLS,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       cors: [
@@ -35,20 +35,6 @@ export class FrontendStack extends cdk.Stack {
         },
       ],
     });
-
-    // CloudFront用のOrigin Access Identity
-    const oai = new cloudfront.OriginAccessIdentity(this, 'OAI', {
-      comment: 'OAI for GraphHopper Frontend',
-    });
-
-    // S3バケットポリシー
-    this.bucket.addToResourcePolicy(
-      new iam.PolicyStatement({
-        actions: ['s3:GetObject'],
-        resources: [`${this.bucket.bucketArn}/*`],
-        principals: [oai.grantPrincipal],
-      })
-    );
 
     // CloudFrontディストリビューション
     this.distribution = new cloudfront.Distribution(this, 'Distribution', {
@@ -68,9 +54,7 @@ export class FrontendStack extends cdk.Stack {
         },
       ],
       defaultBehavior: {
-        origin: new origins.S3Origin(this.bucket, {
-          originAccessIdentity: oai,
-        }),
+        origin: new origins.S3StaticWebsiteOrigin(this.bucket),
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         allowedMethods: cloudfront.AllowedMethods.ALLOW_GET_HEAD_OPTIONS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
@@ -80,6 +64,7 @@ export class FrontendStack extends cdk.Stack {
       httpVersion: cloudfront.HttpVersion.HTTP2_AND_3,
       comment: 'GraphHopper Demo Frontend',
     });
+
 
     // GraphHopper APIへのプロキシ設定
     this.distribution.addBehavior('/api/*', new origins.HttpOrigin(props.apiUrl.replace('http://', '')), {

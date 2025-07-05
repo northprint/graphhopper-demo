@@ -1,0 +1,77 @@
+name: Deploy Simple Stack
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ simple ]
+
+env:
+  AWS_REGION: ap-northeast-1
+
+jobs:
+  deploy:
+    name: Deploy to App Runner
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+    
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+    
+    - name: Install CDK
+      run: npm install -g aws-cdk
+    
+    - name: Deploy CDK Stack (ECR repositories)
+      id: deploy-cdk
+      run: |
+        cd infrastructure
+        npm install
+        cdk deploy SimpleGraphHopperStack --require-approval never --outputs-file outputs.json
+        
+        # Extract ECR URIs from CDK outputs
+        API_REPO=$(jq -r '.SimpleGraphHopperStack.ApiRepositoryUri' outputs.json)
+        FRONTEND_REPO=$(jq -r '.SimpleGraphHopperStack.FrontendRepositoryUri' outputs.json)
+        
+        echo "api_repo=$API_REPO" >> $GITHUB_OUTPUT
+        echo "frontend_repo=$FRONTEND_REPO" >> $GITHUB_OUTPUT
+      env:
+        CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+        CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}
+    
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+    
+    - name: Build and push GraphHopper API
+      run: |
+        # Build and push API
+        docker build -f services/graphhopper/Dockerfile.apprunner -t graphhopper-api services/graphhopper
+        docker tag graphhopper-api:latest ${{ steps.deploy-cdk.outputs.api_repo }}:latest
+        docker push ${{ steps.deploy-cdk.outputs.api_repo }}:latest
+    
+    - name: Build and push Frontend
+      run: |
+        # Build and push Frontend (プロジェクトルートからビルド)
+        docker build -f apps/web/Dockerfile.production -t graphhopper-frontend .
+        docker tag graphhopper-frontend:latest ${{ steps.deploy-cdk.outputs.frontend_repo }}:latest
+        docker push ${{ steps.deploy-cdk.outputs.frontend_repo }}:latest
+    
+    - name: Update App Runner Services
+      run: |
+        # CDKを再実行してApp Runnerサービスを更新
+        cd infrastructure
+        cdk deploy SimpleGraphHopperStack --require-approval never
+      env:
+        CDK_DEFAULT_ACCOUNT: ${{ secrets.AWS_ACCOUNT_ID }}
+        CDK_DEFAULT_REGION: ${{ env.AWS_REGION }}

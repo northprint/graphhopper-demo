@@ -42,11 +42,11 @@ USER graphhopper
 EXPOSE 8989
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl -f http://localhost:8989/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
+    CMD curl -f http://localhost:8989/ || exit 1
 
 # メモリ設定を環境変数で調整可能に
-ENV JAVA_OPTS="-Xmx512m -Xms256m"
+ENV JAVA_OPTS="-Xmx1g -Xms512m"
 
 # Run GraphHopper
 ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar graphhopper.jar server config.yml"]

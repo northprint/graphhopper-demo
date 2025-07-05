@@ -1,0 +1,7 @@
+{
+  "ECRStack": {
+    "ApiRepositoryUri": "201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-api-simple",
+    "DataBucketName": "graphhopper-data-simple-201486033314",
+    "FrontendRepositoryUri": "201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-frontend-simple"
+  }
+}

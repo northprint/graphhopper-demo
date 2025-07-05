@@ -1,1 +1,0 @@
-export const env={"PUBLIC_GRAPHHOPPER_URL":"http://localhost:8989"}

@@ -34,3 +34,7 @@ return {
 	}
 }
 })();
+
+export const prerendered = new Set([]);
+
+export const base = "";
