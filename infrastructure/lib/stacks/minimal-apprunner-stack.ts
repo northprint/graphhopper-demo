@@ -32,6 +32,7 @@ export class MinimalAppRunnerStack extends cdk.Stack {
     // App Runner用のアクセスロール
     const apiAccessRole = new iam.Role(this, 'ApiAccessRole', {
       assumedBy: new iam.ServicePrincipal('build.apprunner.amazonaws.com'),
+      description: 'Role for App Runner to access ECR images',
     });
 
     apiAccessRole.addToPolicy(
@@ -41,15 +42,48 @@ export class MinimalAppRunnerStack extends cdk.Stack {
           'ecr:BatchCheckLayerAvailability',
           'ecr:GetDownloadUrlForLayer',
           'ecr:BatchGetImage',
+          'ecr:DescribeImages',
+          'ecr:DescribeRepositories',
         ],
         resources: ['*'],
       })
     );
 
     apiRepository.grantPull(apiAccessRole);
+    
+    // App Runnerサービス実行用のインスタンスロール
+    const apiInstanceRole = new iam.Role(this, 'ApiInstanceRole', {
+      assumedBy: new iam.ServicePrincipal('tasks.apprunner.amazonaws.com'),
+      description: 'Role for App Runner service instance',
+    });
+
+    // CloudWatch Logsへの書き込み権限
+    apiInstanceRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
+          'logs:DescribeLogStreams',
+        ],
+        resources: ['*'],
+      })
+    );
+
+    // X-Rayトレーシング権限（オプション）
+    apiInstanceRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'xray:PutTraceSegments',
+          'xray:PutTelemetryRecords',
+        ],
+        resources: ['*'],
+      })
+    );
 
     const frontendAccessRole = new iam.Role(this, 'FrontendAccessRole', {
       assumedBy: new iam.ServicePrincipal('build.apprunner.amazonaws.com'),
+      description: 'Role for App Runner to access ECR images',
     });
 
     frontendAccessRole.addToPolicy(
@@ -59,12 +93,33 @@ export class MinimalAppRunnerStack extends cdk.Stack {
           'ecr:BatchCheckLayerAvailability',
           'ecr:GetDownloadUrlForLayer',
           'ecr:BatchGetImage',
+          'ecr:DescribeImages',
+          'ecr:DescribeRepositories',
         ],
         resources: ['*'],
       })
     );
 
     frontendRepository.grantPull(frontendAccessRole);
+    
+    // フロントエンドサービス実行用のインスタンスロール
+    const frontendInstanceRole = new iam.Role(this, 'FrontendInstanceRole', {
+      assumedBy: new iam.ServicePrincipal('tasks.apprunner.amazonaws.com'),
+      description: 'Role for App Runner frontend service instance',
+    });
+
+    // CloudWatch Logsへの書き込み権限
+    frontendInstanceRole.addToPolicy(
+      new iam.PolicyStatement({
+        actions: [
+          'logs:CreateLogGroup',
+          'logs:CreateLogStream',
+          'logs:PutLogEvents',
+          'logs:DescribeLogStreams',
+        ],
+        resources: ['*'],
+      })
+    );
 
     // GraphHopper API (App Runner) - 最小限の設定
     const apiService = new apprunner.CfnService(this, 'GraphHopperAPI', {
@@ -98,6 +153,7 @@ export class MinimalAppRunnerStack extends cdk.Stack {
       instanceConfiguration: {
         cpu: '1 vCPU',
         memory: '2 GB',
+        instanceRoleArn: apiInstanceRole.roleArn,
       },
     });
 
@@ -121,6 +177,19 @@ export class MinimalAppRunnerStack extends cdk.Stack {
             ],
           },
         },
+      },
+      healthCheckConfiguration: {
+        protocol: 'HTTP',
+        path: '/',
+        interval: 20,
+        timeout: 10,
+        healthyThreshold: 1,
+        unhealthyThreshold: 5,
+      },
+      instanceConfiguration: {
+        cpu: '0.25 vCPU',
+        memory: '0.5 GB',
+        instanceRoleArn: frontendInstanceRole.roleArn,
       },
     });
 

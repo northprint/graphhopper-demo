@@ -1,0 +1,6 @@
+{
+  "ECROnlyStack": {
+    "ApiRepositoryUri": "087850074138.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-api-simple",
+    "FrontendRepositoryUri": "087850074138.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-frontend-simple"
+  }
+}

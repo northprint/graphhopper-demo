@@ -1,36 +1,35 @@
 FROM openjdk:17-slim
 
-# Install AWS CLI for S3 access
+WORKDIR /graphhopper
+
+# 必要なパッケージをインストール
 RUN apt-get update && \
-    apt-get install -y curl unzip && \
-    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip" && \
-    unzip awscliv2.zip && \
-    ./aws/install && \
-    rm -rf awscliv2.zip aws && \
+    apt-get install -y curl && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-WORKDIR /graphhopper
-
-# Download GraphHopper
-RUN curl -o graphhopper.jar \
+# GraphHopperをダウンロード
+RUN curl -L -o graphhopper.jar \
     https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/9.1/graphhopper-web-9.1.jar
 
-# Copy configuration
-COPY config-demo.yml config.yml
+# 設定ファイルをコピー（ビルドコンテキストからの相対パス）
+COPY services/graphhopper/config-demo.yml config.yml
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-if [ -n "$S3_DATA_BUCKET" ]; then\n\
-  echo "Downloading OSM data from S3..."\n\
-  aws s3 cp s3://$S3_DATA_BUCKET/map.osm.pbf /graphhopper/data/map.osm.pbf\n\
-fi\n\
-exec java $JAVA_OPTS -jar graphhopper.jar server config.yml' > /graphhopper/start.sh && \
-    chmod +x /graphhopper/start.sh
+# OSMデータをコピー
+COPY data/map.osm.pbf /graphhopper/data/map.osm.pbf
 
+# データディレクトリの作成
+RUN mkdir -p /graphhopper/data
+
+# ポート公開
 EXPOSE 8989
 
+# ヘルスチェック
 HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
     CMD curl -f http://localhost:8989/ || exit 1
 
-ENTRYPOINT ["/graphhopper/start.sh"]
+# メモリ設定
+ENV JAVA_OPTS="-Xmx1g -Xms512m"
+
+# GraphHopperを起動
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar graphhopper.jar server config.yml"]

@@ -37,11 +37,11 @@ jobs:
       run: |
         cd infrastructure
         npm install
-        cdk deploy SimpleGraphHopperStack --require-approval never --outputs-file outputs.json
+        CDK_APP="npx ts-node lib/app-ecr-only.ts" cdk deploy ECROnlyStack --require-approval never --outputs-file outputs.json
         
         # Extract ECR URIs from CDK outputs
-        API_REPO=$(jq -r '.SimpleGraphHopperStack.ApiRepositoryUri' outputs.json)
-        FRONTEND_REPO=$(jq -r '.SimpleGraphHopperStack.FrontendRepositoryUri' outputs.json)
+        API_REPO=$(jq -r '.ECROnlyStack.ApiRepositoryUri' outputs.json)
+        FRONTEND_REPO=$(jq -r '.ECROnlyStack.FrontendRepositoryUri' outputs.json)
         
         echo "api_repo=$API_REPO" >> $GITHUB_OUTPUT
         echo "frontend_repo=$FRONTEND_REPO" >> $GITHUB_OUTPUT
