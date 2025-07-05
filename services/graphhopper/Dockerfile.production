@@ -26,10 +26,10 @@ WORKDIR /graphhopper
 # Copy GraphHopper JAR
 COPY --from=builder /build/graphhopper.jar .
 
-# Copy configuration
-COPY config-demo.yml config.yml
+# Copy configuration (from services/graphhopper directory)
+COPY services/graphhopper/config-demo.yml config.yml
 
-# Copy OSM data (軽量版)
+# Copy OSM data (from project root)
 COPY data/map.osm.pbf /graphhopper/data/map.osm.pbf
 
 # Create non-root user
