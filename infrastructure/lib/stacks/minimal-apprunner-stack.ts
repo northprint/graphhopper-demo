@@ -45,14 +45,14 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         },
       },
       instanceConfiguration: {
-        cpu: '1 vCPU',
-        memory: '2 GB',
+        cpu: '2 vCPU',
+        memory: '4 GB',
         instanceRoleArn: instanceRole.roleArn,
       },
       healthCheckConfiguration: {
         protocol: 'HTTP',
-        path: '/health',
-        interval: 20,
+        path: '/',
+        interval: 30,
         timeout: 10,
         healthyThreshold: 1,
         unhealthyThreshold: 10,
