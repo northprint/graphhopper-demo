@@ -1,8 +1,9 @@
 # Build stage
 FROM node:20-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and required build tools
+RUN apk add --no-cache python3 make g++ && \
+    corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
@@ -13,26 +14,35 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/web/package.json ./apps/web/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile --filter @graphhopper-demo/web...
+RUN pnpm install --frozen-lockfile
 
 # Copy app source
 COPY apps/web ./apps/web
 
+# Set PUBLIC_GRAPHHOPPER_URL for build time
+ENV PUBLIC_GRAPHHOPPER_URL=https://graphhopper-api.example.com
+
 # Build the app
-WORKDIR /app/apps/web
-RUN pnpm build
+WORKDIR /app
+RUN pnpm --filter @graphhopper-demo/web build
 
 # Production stage
 FROM node:20-alpine AS production
 
+# Install pnpm for production
+RUN corepack enable && corepack prepare pnpm@latest --activate
+
 WORKDIR /app
 
-# Copy built app
-COPY --from=builder /app/apps/web/build ./build
-COPY --from=builder /app/apps/web/package.json ./
+# Copy package files
+COPY --from=builder /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+COPY --from=builder /app/apps/web/package.json ./apps/web/
 
-# Install production dependencies only
-RUN npm install --omit=dev
+# Install production dependencies
+RUN pnpm install --frozen-lockfile --prod --filter @graphhopper-demo/web
+
+# Copy built app
+COPY --from=builder /app/apps/web/build ./apps/web/build
 
 # Expose port
 EXPOSE 3000
@@ -46,4 +56,4 @@ ENV NODE_ENV=production
 ENV PORT=3000
 
 # Start the server
-CMD ["node", "build"]
+CMD ["node", "apps/web/build"]
