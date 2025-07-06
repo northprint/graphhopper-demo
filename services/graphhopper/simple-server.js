@@ -79,7 +79,7 @@ const server = http.createServer((req, res) => {
 // GraphHopperを起動
 startGraphHopper();
 
-// HTTPサーバーを起動
-server.listen(8989, '0.0.0.0', () => {
-  console.log('Wrapper server running on port 8989');
+// HTTPサーバーを起動（ポート8990）
+server.listen(8990, '0.0.0.0', () => {
+  console.log('Wrapper server running on port 8990');
 });
