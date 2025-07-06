@@ -8,6 +8,7 @@ export interface RouteRequest {
   calc_points?: boolean;
   points_encoded?: boolean;
   elevation?: boolean;
+  block_area?: string; // Semicolon separated list of circular blocked areas
 }
 
 export interface RouteResponse {
@@ -76,6 +77,9 @@ export class GraphHopperClient {
     }
     if (request.elevation !== undefined) {
       params.append('elevation', String(request.elevation));
+    }
+    if (request.block_area) {
+      params.append('block_area', request.block_area);
     }
 
     const response = await fetch(`${this.baseUrl}/route?${params.toString()}`);
