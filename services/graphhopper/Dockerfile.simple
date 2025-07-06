@@ -22,11 +22,14 @@ COPY data/map.osm.pbf /graphhopper/data/map.osm.pbf
 # ラッパーサーバーをコピー
 COPY services/graphhopper/simple-server.js /graphhopper/simple-server.js
 
-# ポート公開
-EXPOSE 8990
+# ポート公開（App Runnerは8000を期待）
+EXPOSE 8000
 
 # メモリ設定
 ENV JAVA_OPTS="-Xmx1g -Xms256m"
+
+# App Runnerはポート8000を使用
+ENV PORT=8000
 
 # Node.jsラッパーを起動
 CMD ["node", "/graphhopper/simple-server.js"]

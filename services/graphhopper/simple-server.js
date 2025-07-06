@@ -6,6 +6,10 @@ let graphhopperProcess = null;
 let isGraphHopperRunning = false;
 let startupLogs = [];
 
+// App Runnerは環境変数PORTを設定する
+const PORT = process.env.PORT || 8990;
+const GRAPHHOPPER_PORT = 8991;
+
 // GraphHopperを起動
 function startGraphHopper() {
   console.log('Starting GraphHopper...');
@@ -34,15 +38,28 @@ function startGraphHopper() {
   graphhopperProcess.on('exit', (code) => {
     console.log(`GraphHopper exited with code ${code}`);
     isGraphHopperRunning = false;
+    startupLogs.push(`GraphHopper exited with code ${code}`);
   });
+
+  graphhopperProcess.on('error', (err) => {
+    console.error('Failed to start GraphHopper:', err);
+    startupLogs.push('ERROR: Failed to start GraphHopper: ' + err.message);
+  });
+}
+
+// CORSヘッダーを設定する関数
+function setCorsHeaders(res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 }
 
 // HTTPサーバー
 const server = http.createServer((req, res) => {
+  console.log(`Request: ${req.method} ${req.url}`);
+  
   // CORSヘッダーを追加
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  setCorsHeaders(res);
 
   // プリフライトリクエストの処理
   if (req.method === 'OPTIONS') {
@@ -64,20 +81,37 @@ const server = http.createServer((req, res) => {
   } else {
     // GraphHopperへのプロキシ
     if (isGraphHopperRunning) {
+      // リクエストヘッダーをコピー（Host以外）
+      const proxyHeaders = Object.assign({}, req.headers);
+      delete proxyHeaders.host;
+      
       const proxy = http.request({
         hostname: 'localhost',
-        port: 8991,  // GraphHopperの新しいポート
+        port: GRAPHHOPPER_PORT,
         path: req.url,
         method: req.method,
-        headers: req.headers
+        headers: proxyHeaders
       }, (proxyRes) => {
-        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        // プロキシレスポンスのヘッダーをコピー（CORSヘッダーは除外）
+        const responseHeaders = {};
+        Object.keys(proxyRes.headers).forEach(key => {
+          if (!key.toLowerCase().startsWith('access-control-')) {
+            responseHeaders[key] = proxyRes.headers[key];
+          }
+        });
+        
+        // CORSヘッダーを確実に設定
+        setCorsHeaders(res);
+        
+        res.writeHead(proxyRes.statusCode, responseHeaders);
         proxyRes.pipe(res);
       });
       
       proxy.on('error', (err) => {
+        console.error('Proxy error:', err);
+        setCorsHeaders(res);
         res.writeHead(503, { 'Content-Type': 'text/plain' });
-        res.end('GraphHopper is not responding');
+        res.end('GraphHopper is not responding: ' + err.message);
       });
       
       req.pipe(proxy);
@@ -91,7 +125,32 @@ const server = http.createServer((req, res) => {
 // GraphHopperを起動
 startGraphHopper();
 
-// HTTPサーバーを起動（ポート8990）
-server.listen(8990, '0.0.0.0', () => {
-  console.log('Wrapper server running on port 8990');
+// HTTPサーバーを起動
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Wrapper server running on port ${PORT}`);
+  console.log(`GraphHopper will be proxied from port ${GRAPHHOPPER_PORT}`);
+  console.log('Environment:', {
+    PORT: process.env.PORT,
+    JAVA_OPTS: process.env.JAVA_OPTS || '-Xmx1g -Xms256m'
+  });
+});
+
+// グレースフルシャットダウン
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down...');
+  server.close(() => {
+    console.log('HTTP server closed');
+    if (graphhopperProcess) {
+      graphhopperProcess.kill();
+    }
+    process.exit(0);
+  });
+});
+
+process.on('SIGINT', () => {
+  console.log('SIGINT received, shutting down...');
+  if (graphhopperProcess) {
+    graphhopperProcess.kill();
+  }
+  process.exit(0);
 });
