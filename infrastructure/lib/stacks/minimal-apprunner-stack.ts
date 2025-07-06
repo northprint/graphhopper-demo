@@ -13,6 +13,24 @@ export class MinimalAppRunnerStack extends cdk.Stack {
       managedPolicies: [
         iam.ManagedPolicy.fromAwsManagedPolicyName('CloudWatchLogsFullAccess'),
       ],
+      inlinePolicies: {
+        S3Access: new iam.PolicyDocument({
+          statements: [
+            new iam.PolicyStatement({
+              effect: iam.Effect.ALLOW,
+              actions: [
+                's3:GetObject',
+                's3:PutObject',
+                's3:ListBucket',
+              ],
+              resources: [
+                `arn:aws:s3:::graphhopper-data-*`,
+                `arn:aws:s3:::graphhopper-data-*/*`,
+              ],
+            }),
+          ],
+        }),
+      },
     });
 
     // App Runner アクセスロール（ECR用）
@@ -34,7 +52,19 @@ export class MinimalAppRunnerStack extends cdk.Stack {
             runtimeEnvironmentVariables: [
               {
                 name: 'JAVA_OPTS',
-                value: '-Xmx1g -Xms256m',
+                value: '-Xmx2g -Xms512m',
+              },
+              {
+                name: 'DATA_BUCKET',
+                value: 'graphhopper-data-201486033314-ap-northeast-1',
+              },
+              {
+                name: 'OSM_FILE',
+                value: 'osm-data/kanto-latest.osm.pbf',
+              },
+              {
+                name: 'GRAPH_PROFILE',
+                value: 'kanto-car',
               },
             ],
           },
@@ -45,8 +75,8 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         },
       },
       instanceConfiguration: {
-        cpu: '1 vCPU',
-        memory: '2 GB',
+        cpu: '2 vCPU',
+        memory: '4 GB',
         instanceRoleArn: instanceRole.roleArn,
       },
       healthCheckConfiguration: {

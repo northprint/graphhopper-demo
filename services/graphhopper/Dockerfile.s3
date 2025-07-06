@@ -1,0 +1,33 @@
+FROM openjdk:17-slim
+
+WORKDIR /graphhopper
+
+# 必要なパッケージをインストール（AWS CLIを追加）
+RUN apt-get update && \
+    apt-get install -y curl nodejs python3 python3-pip && \
+    pip3 install awscli && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# GraphHopperをダウンロード
+RUN curl -L -o graphhopper.jar \
+    https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/9.1/graphhopper-web-9.1.jar
+
+# 設定ファイルをコピー
+COPY services/graphhopper/config-s3.yml config.yml
+
+# スクリプトをコピー
+COPY services/graphhopper/s3-loader.js /graphhopper/s3-loader.js
+COPY services/graphhopper/s3-wrapper.js /graphhopper/s3-wrapper.js
+
+# データディレクトリを作成
+RUN mkdir -p /graphhopper/data /graphhopper/graph-cache
+
+# ポート公開
+EXPOSE 8990
+
+# メモリ設定（関東地方用）
+ENV JAVA_OPTS="-Xmx2g -Xms512m"
+
+# S3ラッパーを起動
+CMD ["node", "/graphhopper/s3-wrapper.js"]

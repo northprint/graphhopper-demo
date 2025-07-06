@@ -1,0 +1,6 @@
+{
+  "DataStorageStack": {
+    "DataBucketName": "graphhopper-data-201486033314-ap-northeast-1",
+    "DataBucketArn": "arn:aws:s3:::graphhopper-data-201486033314-ap-northeast-1"
+  }
+}
