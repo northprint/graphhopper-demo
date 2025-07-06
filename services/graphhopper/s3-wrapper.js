@@ -1,6 +1,53 @@
 const http = require('http');
 const { spawn } = require('child_process');
-const S3GraphHopperLoader = require('./s3-loader');
+// AWS SDKの設定
+process.env.AWS_REGION = process.env.AWS_REGION || 'ap-northeast-1';
+
+// S3ローダーをインラインで定義（requireの問題を回避）
+const AWS = require('/usr/local/lib/node_modules/aws-sdk');
+const fs = require('fs').promises;
+const path = require('path');
+
+class S3GraphHopperLoader {
+  constructor(bucketName) {
+    this.bucket = bucketName;
+    this.s3 = new AWS.S3();
+    this.dataDir = '/graphhopper/data';
+    this.graphDir = '/graphhopper/graph-cache';
+  }
+
+  async downloadFile(s3Key, localPath) {
+    console.log(`Downloading ${s3Key} from S3...`);
+    try {
+      const data = await this.s3.getObject({
+        Bucket: this.bucket,
+        Key: s3Key
+      }).promise();
+      
+      await fs.mkdir(path.dirname(localPath), { recursive: true });
+      await fs.writeFile(localPath, data.Body);
+      console.log(`Downloaded ${s3Key} successfully`);
+      return true;
+    } catch (error) {
+      console.error(`Failed to download ${s3Key}:`, error.message);
+      return false;
+    }
+  }
+
+  async initialize() {
+    console.log('Initializing GraphHopper with S3 data...');
+    const osmKey = process.env.OSM_FILE || 'osm-data/kanto-latest.osm.pbf';
+    const osmPath = path.join(this.dataDir, 'map.osm.pbf');
+    
+    const hasOsm = await this.downloadFile(osmKey, osmPath);
+    if (!hasOsm) {
+      throw new Error(`OSM file not found in S3: ${osmKey}`);
+    }
+    
+    console.log('GraphHopper initialization complete');
+    return true;
+  }
+}
 
 // 環境変数
 const DATA_BUCKET = process.env.DATA_BUCKET || 'graphhopper-data';

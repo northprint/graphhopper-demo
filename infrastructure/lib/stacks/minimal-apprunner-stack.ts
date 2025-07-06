@@ -48,7 +48,7 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         imageRepository: {
           imageIdentifier: '201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-api:latest',
           imageConfiguration: {
-            port: '8990',
+            port: '8989',
             runtimeEnvironmentVariables: [
               {
                 name: 'JAVA_OPTS',

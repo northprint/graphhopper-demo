@@ -32,11 +32,11 @@ graphhopper:
 server:
   application_connectors:
     - type: http
-      port: 8991
-      bind_host: 127.0.0.1
+      port: 8989
+      bind_host: 0.0.0.0
   request_log:
     appenders: []
   admin_connectors:
     - type: http
-      port: 8992
-      bind_host: 127.0.0.1
+      port: 8989
+      bind_host: 0.0.0.0
