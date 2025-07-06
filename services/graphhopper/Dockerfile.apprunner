@@ -2,9 +2,9 @@ FROM openjdk:17-slim
 
 WORKDIR /graphhopper
 
-# 必要なパッケージをインストール
+# 必要なパッケージをインストール（Node.jsを追加）
 RUN apt-get update && \
-    apt-get install -y curl && \
+    apt-get install -y curl nodejs && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -31,9 +31,13 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=5 \
 # メモリ設定（App Runner 2GB用に最適化）
 ENV JAVA_OPTS="-Xmx1g -Xms256m -XX:MaxMetaspaceSize=256m"
 
-# エントリーポイントスクリプトをコピー
+# エントリーポイントスクリプトとヘルスチェックサーバーをコピー
 COPY services/graphhopper/entrypoint.sh /graphhopper/entrypoint.sh
+COPY services/graphhopper/health-server.js /graphhopper/health-server.js
 RUN chmod +x /graphhopper/entrypoint.sh
+
+# ヘルスチェック用のポートも公開
+EXPOSE 8990
 
 # GraphHopperを起動
 ENTRYPOINT ["/graphhopper/entrypoint.sh"]
