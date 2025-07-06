@@ -37,6 +37,28 @@ else
 fi
 
 echo ""
+echo "🎯 Uploading to S3..."
+
+# S3バケット名（環境変数から取得、またはデフォルト値）
+BUCKET_NAME="${S3_BUCKET:-graphhopper-map-data-201486033314}"
+
+# S3にアップロード
+echo "📤 Uploading to s3://$BUCKET_NAME/kanto-latest.osm.pbf"
+aws s3 cp "$OUTPUT_FILE" "s3://$BUCKET_NAME/kanto-latest.osm.pbf"
+
+# 既存のデモデータもアップロード
+if [ -f "data/map.osm.pbf" ]; then
+    echo "📤 Uploading demo data to s3://$BUCKET_NAME/shibuya-demo.osm.pbf"
+    aws s3 cp "data/map.osm.pbf" "s3://$BUCKET_NAME/shibuya-demo.osm.pbf"
+fi
+
+echo ""
+echo "✅ Upload complete! Files in S3:"
+aws s3 ls "s3://$BUCKET_NAME/" --human-readable
+
+echo ""
 echo "🎯 Next steps:"
-echo "1. Upload to S3: aws s3 cp $OUTPUT_FILE s3://your-bucket/osm-data/"
-echo "2. Deploy with S3 support: cdk deploy DataStorageStack"
+echo "1. Update App Runner environment variables:"
+echo "   - S3_BUCKET: $BUCKET_NAME"
+echo "   - S3_KEY: kanto-latest.osm.pbf (or shibuya-demo.osm.pbf for testing)"
+echo "2. Deploy S3-enabled version"

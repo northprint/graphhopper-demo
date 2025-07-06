@@ -46,3 +46,7 @@ coverage
 # CDK
 cdk.out
 *.outputs.json
+
+# Large OSM data files
+data/kanto-latest.osm.pbf
+data/*-latest.osm.pbf

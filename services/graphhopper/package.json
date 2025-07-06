@@ -1,0 +1,12 @@
+{
+  "name": "graphhopper-s3-wrapper",
+  "version": "1.0.0",
+  "description": "GraphHopper wrapper with S3 support",
+  "main": "s3-server.js",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}
