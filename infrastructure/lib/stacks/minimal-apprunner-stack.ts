@@ -48,23 +48,11 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         imageRepository: {
           imageIdentifier: '201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-api:latest',
           imageConfiguration: {
-            port: '8989',
+            port: '8990',
             runtimeEnvironmentVariables: [
               {
                 name: 'JAVA_OPTS',
-                value: '-Xmx2g -Xms512m',
-              },
-              {
-                name: 'DATA_BUCKET',
-                value: 'graphhopper-data-201486033314-ap-northeast-1',
-              },
-              {
-                name: 'OSM_FILE',
-                value: 'osm-data/kanto-latest.osm.pbf',
-              },
-              {
-                name: 'GRAPH_PROFILE',
-                value: 'kanto-car',
+                value: '-Xmx1g -Xms256m',
               },
             ],
           },
@@ -75,8 +63,8 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         },
       },
       instanceConfiguration: {
-        cpu: '2 vCPU',
-        memory: '4 GB',
+        cpu: '1 vCPU',
+        memory: '2 GB',
         instanceRoleArn: instanceRole.roleArn,
       },
       healthCheckConfiguration: {
