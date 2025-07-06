@@ -34,7 +34,7 @@ export class FrontendAppRunnerStack extends cdk.Stack {
             runtimeEnvironmentVariables: [
               {
                 name: 'PUBLIC_GRAPHHOPPER_URL',
-                value: 'https://2qdyg9js3i.ap-northeast-1.awsapprunner.com',
+                value: 'https://22fxfc9i7z.ap-northeast-1.awsapprunner.com',
               },
             ],
           },

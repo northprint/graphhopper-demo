@@ -16,7 +16,7 @@ RUN pnpm install --frozen-lockfile
 COPY apps/web ./apps/web
 
 # 環境変数を設定（ビルド時）
-ENV PUBLIC_GRAPHHOPPER_URL=https://2qdyg9js3i.ap-northeast-1.awsapprunner.com
+ENV PUBLIC_GRAPHHOPPER_URL=https://22fxfc9i7z.ap-northeast-1.awsapprunner.com
 
 # ビルド
 RUN cd apps/web && pnpm build
