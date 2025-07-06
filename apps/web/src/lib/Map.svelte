@@ -76,8 +76,16 @@
           
           // 距離と時間を計算
           const distance = (path.distance / 1000).toFixed(2);
-          const time = Math.round(path.time / 1000 / 60);
-          routeInfo = { distance: `${distance}km`, time: `${time}分` };
+          const timeInSeconds = path.time / 1000;
+          const minutes = Math.floor(timeInSeconds / 60);
+          const seconds = Math.round(timeInSeconds % 60);
+          
+          // 1分未満の場合は秒で表示、それ以外は分と秒で表示
+          const timeDisplay = minutes > 0 
+            ? `${minutes}分${seconds}秒`
+            : `${seconds}秒`;
+          
+          routeInfo = { distance: `${distance}km`, time: timeDisplay };
         }
       } catch (error) {
         console.error('ルート計算エラー:', error);
