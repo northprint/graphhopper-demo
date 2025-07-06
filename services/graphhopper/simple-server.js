@@ -11,7 +11,7 @@ function startGraphHopper() {
   console.log('Starting GraphHopper...');
   
   const javaOpts = process.env.JAVA_OPTS || '-Xmx1g -Xms256m';
-  graphhopperProcess = spawn('java', [...javaOpts.split(' '), '-jar', 'graphhopper.jar', 'server', 'config.yml'], {
+  graphhopperProcess = spawn('java', [...javaOpts.split(' '), '-jar', 'graphhopper.jar', 'server', 'config-apprunner.yml'], {
     cwd: '/graphhopper',
     env: process.env
   });
@@ -54,7 +54,7 @@ const server = http.createServer((req, res) => {
     if (isGraphHopperRunning) {
       const proxy = http.request({
         hostname: 'localhost',
-        port: 8989,
+        port: 8991,  // GraphHopperの新しいポート
         path: req.url,
         method: req.method,
         headers: req.headers
