@@ -42,3 +42,7 @@ coverage
 
 # Misc
 *.pem
+
+# CDK
+cdk.out
+*.outputs.json

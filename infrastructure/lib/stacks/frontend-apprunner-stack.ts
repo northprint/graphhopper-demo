@@ -28,7 +28,7 @@ export class FrontendAppRunnerStack extends cdk.Stack {
       serviceName: 'graphhopper-frontend',
       sourceConfiguration: {
         imageRepository: {
-          imageIdentifier: '201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-frontend:latest',
+          imageIdentifier: '087850074138.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-frontend:latest',
           imageConfiguration: {
             port: '3000',
             runtimeEnvironmentVariables: [
