@@ -45,8 +45,8 @@ export class MinimalAppRunnerStack extends cdk.Stack {
         },
       },
       instanceConfiguration: {
-        cpu: '2 vCPU',
-        memory: '4 GB',
+        cpu: '1 vCPU',
+        memory: '2 GB',
         instanceRoleArn: instanceRole.roleArn,
       },
       healthCheckConfiguration: {

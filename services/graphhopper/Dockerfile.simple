@@ -1,0 +1,31 @@
+FROM openjdk:17-slim
+
+WORKDIR /graphhopper
+
+# Node.jsをインストール
+RUN apt-get update && \
+    apt-get install -y curl nodejs && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# GraphHopperをダウンロード
+RUN curl -L -o graphhopper.jar \
+    https://repo1.maven.org/maven2/com/graphhopper/graphhopper-web/9.1/graphhopper-web-9.1.jar
+
+# 設定ファイルをコピー
+COPY services/graphhopper/config-demo.yml config.yml
+
+# OSMデータをコピー
+COPY data/map.osm.pbf /graphhopper/data/map.osm.pbf
+
+# ラッパーサーバーをコピー
+COPY services/graphhopper/simple-server.js /graphhopper/simple-server.js
+
+# ポート公開
+EXPOSE 8989
+
+# メモリ設定
+ENV JAVA_OPTS="-Xmx1g -Xms256m"
+
+# Node.jsラッパーを起動
+CMD ["node", "/graphhopper/simple-server.js"]
