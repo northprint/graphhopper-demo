@@ -18,6 +18,9 @@ RUN curl -L -o graphhopper.jar \
 COPY services/graphhopper/config-demo.yml config.yml
 COPY services/graphhopper/config-apprunner.yml config-apprunner.yml
 
+# カスタムモデルディレクトリをコピー
+COPY services/graphhopper/custom_models /graphhopper/custom_models
+
 # package.jsonをコピーして依存関係をインストール
 COPY services/graphhopper/package.json /graphhopper/
 RUN npm install
