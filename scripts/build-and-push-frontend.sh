@@ -14,7 +14,7 @@ echo "Building frontend image..."
 aws ecr get-login-password --profile ${AWS_PROFILE} --region ${AWS_REGION} | docker login --username AWS --password-stdin ${ECR_REGISTRY}
 
 # Dockerイメージをビルド
-docker build -f apps/web/Dockerfile.apprunner -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest .
+docker build -f apps/web/Dockerfile -t ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest .
 
 # ECRにプッシュ
 docker push ${ECR_REGISTRY}/${ECR_REPOSITORY}:latest

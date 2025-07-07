@@ -2,7 +2,7 @@
 set -e
 
 echo "=== Building Docker image locally ==="
-docker build -f apps/web/Dockerfile.apprunner.fixed -t graphhopper-frontend-test .
+docker build -f apps/web/Dockerfile -t graphhopper-frontend-test .
 
 echo -e "\n=== Running container locally ==="
 docker run -it --rm \
