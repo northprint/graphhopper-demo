@@ -59,9 +59,9 @@ export class GraphHopperClient {
   async route(request: RouteRequest): Promise<RouteResponse> {
     const params = new URLSearchParams();
     
-    // Add points
+    // Add points (GETリクエストでは緯度,経度の順序)
     request.points.forEach(point => {
-      params.append('point', `${point[0]},${point[1]}`);
+      params.append('point', `${point[1]},${point[0]}`);
     });
 
     // Add optional parameters
