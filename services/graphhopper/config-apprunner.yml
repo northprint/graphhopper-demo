@@ -33,6 +33,8 @@ graphhopper:
   routing:
     # 最大訪問ノード数
     max_visited_nodes: 1000000
+    # カスタムモデルでエリアを使用するためCHを無効化
+    ch.disable: true
 
 # サーバー設定
 server:

@@ -91,21 +91,25 @@ export class GraphHopperClient {
       const customModel = {
         priority: [
           {
-            if: "in_custom1",
+            if: "in_blocked_area",
             multiply_by: 0
           }
         ],
+        speed: [
+          {
+            if: "in_blocked_area",
+            limit_to: 0
+          }
+        ],
         areas: {
-          custom1: {
+          blocked_area: {
             type: "FeatureCollection",
             features: request.block_area.map((area, index) => ({
               type: "Feature",
-              id: `blocked_area_${index}`,
               geometry: {
                 type: "Polygon",
                 coordinates: [area]
-              },
-              properties: {}
+              }
             }))
           }
         }
