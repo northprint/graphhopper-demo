@@ -111,7 +111,7 @@
         }
         
         const route = await graphhopper.route({
-          points: markers.map(m => [m.lat, m.lng]),
+          points: markers.map(m => [m.lng, m.lat]), // GraphHopperは[longitude, latitude]の順序
           profile: profile,
           points_encoded: false,
           ...(blockAreaPolygons.length > 0 ? { block_area: blockAreaPolygons } : {})
