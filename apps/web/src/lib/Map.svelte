@@ -54,6 +54,7 @@
         markers = [];
         routeData = null;
         routeInfo = { distance: '', time: '' };
+        // 通行止めエリアは保持する
       }
       
       const type = markers.length === 0 ? 'start' : 'end';
@@ -146,9 +147,11 @@
     }
   }
   
-  function clearRoute() {
+  function clearRoute(clearBlocked = true) {
     markers = [];
-    blockedAreas = [];
+    if (clearBlocked) {
+      blockedAreas = [];
+    }
     routeData = null;
     routeInfo = { distance: '', time: '' };
   }
@@ -161,7 +164,8 @@
     } else {
       mode = 'normal';
     }
-    clearRoute();
+    // モード切り替え時は通行止めエリアを保持
+    clearRoute(false);
   }
   
   function removeBlockedArea(index: number) {
@@ -270,9 +274,14 @@
         目的地を設定
       </button>
     {/if}
-    {#if markers.length > 0}
-      <button onclick={clearRoute} class="danger">
+    {#if markers.length > 0 || blockedAreas.length > 0}
+      <button onclick={() => clearRoute()} class="danger">
         クリア
+      </button>
+    {/if}
+    {#if blockedAreas.length > 0}
+      <button onclick={() => { blockedAreas = []; if (markers.length >= 2) calculateRoute(); }} class="warning">
+        通行止め解除
       </button>
     {/if}
     {#if mode === 'waypoint'}
@@ -283,6 +292,8 @@
     {#if mode === 'block'}
       <div class="mode-info">
         クリックして通行止めエリアを設定（半径100m）
+        <br>
+        <small style="color: #ef4444;">※ 現在、通行止めエリアは表示のみで、実際のルート計算には反映されません</small>
       </div>
     {/if}
   </div>
@@ -376,6 +387,15 @@
   
   button.danger:hover {
     background: #dc2626;
+  }
+  
+  button.warning {
+    background: #f59e0b;
+    color: white;
+  }
+  
+  button.warning:hover {
+    background: #d97706;
   }
   
   .mode-info {

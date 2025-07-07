@@ -8,7 +8,8 @@ export interface RouteRequest {
   calc_points?: boolean;
   points_encoded?: boolean;
   elevation?: boolean;
-  block_area?: string; // Semicolon separated list of circular blocked areas
+  block_area?: string; // Deprecated - will be converted to custom_model
+  custom_model?: any; // Custom model for advanced routing
 }
 
 export interface RouteResponse {
@@ -78,14 +79,35 @@ export class GraphHopperClient {
     if (request.elevation !== undefined) {
       params.append('elevation', String(request.elevation));
     }
+    
+    // For now, skip block_area functionality as it requires custom GraphHopper configuration
     if (request.block_area) {
-      params.append('block_area', request.block_area);
+      console.warn('Block area functionality is not currently supported by the GraphHopper API. Custom model configuration required.');
+      // Commenting out the custom_model approach for now
+      /*
+      const customModel = {
+        // This would require GraphHopper server to be configured with custom model support
+      };
+      params.append('custom_model', JSON.stringify(customModel));
+      */
+    } else if (request.custom_model) {
+      params.append('custom_model', JSON.stringify(request.custom_model));
     }
 
-    const response = await fetch(`${this.baseUrl}/route?${params.toString()}`);
+    const url = `${this.baseUrl}/route?${params.toString()}`;
+    console.log('GraphHopper API request:', url);
+    
+    const response = await fetch(url);
     
     if (!response.ok) {
-      throw new Error(`GraphHopper API error: ${response.statusText}`);
+      const errorBody = await response.text();
+      console.error('GraphHopper API error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorBody,
+        url: url
+      });
+      throw new Error(`GraphHopper API error: ${response.status} ${response.statusText} - ${errorBody}`);
     }
 
     return response.json();

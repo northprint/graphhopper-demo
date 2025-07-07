@@ -27,6 +27,7 @@ export class FrontendAppRunnerStack extends cdk.Stack {
     const frontendService = new apprunner.CfnService(this, 'FrontendService', {
       serviceName: 'graphhopper-frontend',
       sourceConfiguration: {
+        autoDeploymentsEnabled: false,
         imageRepository: {
           imageIdentifier: '201486033314.dkr.ecr.ap-northeast-1.amazonaws.com/graphhopper-frontend:latest',
           imageConfiguration: {
@@ -35,6 +36,18 @@ export class FrontendAppRunnerStack extends cdk.Stack {
               {
                 name: 'PUBLIC_GRAPHHOPPER_URL',
                 value: 'https://22fxfc9i7z.ap-northeast-1.awsapprunner.com',
+              },
+              {
+                name: 'PORT',
+                value: '3000',
+              },
+              {
+                name: 'HOST',
+                value: '0.0.0.0',
+              },
+              {
+                name: 'NODE_ENV',
+                value: 'production',
               },
             ],
           },
@@ -45,15 +58,15 @@ export class FrontendAppRunnerStack extends cdk.Stack {
         },
       },
       instanceConfiguration: {
-        cpu: '0.5 vCPU',
-        memory: '1 GB',
+        cpu: '1 vCPU',
+        memory: '2 GB',
         instanceRoleArn: instanceRole.roleArn,
       },
       healthCheckConfiguration: {
         protocol: 'HTTP',
         path: '/',
-        interval: 10,
-        timeout: 5,
+        interval: 20,
+        timeout: 15,
         healthyThreshold: 1,
         unhealthyThreshold: 5,
       },

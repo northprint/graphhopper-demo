@@ -1,51 +1,55 @@
-# Build stage
-FROM node:20-alpine AS builder
-
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Copy root package files (Turborepo構成のため)
-COPY ../../package.json ../../pnpm-lock.yaml ../../pnpm-workspace.yaml ./
-COPY ../../turbo.json ./
+# pnpmをインストール
+RUN npm install -g pnpm@9
 
-# Copy app specific files
-COPY package.json ./apps/web/
+# ルートの依存関係をコピー
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/web/package.json ./apps/web/
 
-# Install dependencies (Turborepo環境でのビルド)
-RUN pnpm install --frozen-lockfile --filter @graphhopper-demo/web...
+# 依存関係をインストール
+RUN pnpm install --frozen-lockfile
 
-# Copy app source
-COPY . ./apps/web
+# アプリケーションのソースをコピー
+COPY apps/web ./apps/web
 
-# Build the app
-WORKDIR /app/apps/web
-RUN pnpm build
+# 環境変数を設定（ビルド時）
+ENV PUBLIC_GRAPHHOPPER_URL=https://22fxfc9i7z.ap-northeast-1.awsapprunner.com
 
-# Production stage
-FROM node:20-alpine AS production
+# ビルド
+RUN cd apps/web && pnpm build
+
+# 実行用イメージ
+FROM node:20-slim
 
 WORKDIR /app
 
-# Copy built app
-COPY --from=builder /app/apps/web/build ./build
+RUN npm install -g pnpm@9
+
+# package.jsonを先にコピー（依存関係のインストールのため）
 COPY --from=builder /app/apps/web/package.json ./
 
-# Install production dependencies only
-RUN npm install --omit=dev
+# 本番用依存関係をインストール（adapter-nodeを含む）
+RUN pnpm add @sveltejs/adapter-node && pnpm install --prod
 
-# Expose port
+# ビルド済みファイルをコピー（ディレクトリ構造を保持）
+COPY --from=builder /app/apps/web/build ./build
+COPY --from=builder /app/apps/web/.svelte-kit ./.svelte-kit
+
+# App Runner用にadapter-nodeが必要なため、ビルド済みファイルを確認
+RUN ls -la build/ && ls -la .svelte-kit/
+
+# ポート公開
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:3000/health', (res) => process.exit(res.statusCode === 200 ? 0 : 1))"
-
-# Set environment variables
-ENV NODE_ENV=production
+# 環境変数でポートを設定
 ENV PORT=3000
-ENV ORIGIN=http://localhost:3000
+ENV HOST=0.0.0.0
+ENV NODE_ENV=production
+ENV PROTOCOL_HEADER=x-forwarded-proto
+ENV HOST_HEADER=x-forwarded-host
 
-# Start the server
-CMD ["node", "build"]
+# アプリケーションを起動
+CMD ["node", "build/index.js"]

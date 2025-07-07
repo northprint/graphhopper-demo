@@ -1,6 +1,6 @@
 graphhopper:
   # OpenStreetMap データファイルのパス
-  datareader.file: /graphhopper/data/map.osm.pbf
+  datareader.file: /graphhopper/data/kanto-latest.osm.pbf
   
   # グラフキャッシュの保存場所
   graph.location: /graphhopper/graph-cache

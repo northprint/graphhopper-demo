@@ -50,3 +50,10 @@ cdk.out
 # Large OSM data files
 data/kanto-latest.osm.pbf
 data/*-latest.osm.pbf
+# SvelteKit
+.svelte-kit
+build
+
+# Temporary files
+.tmp
+*.tmp

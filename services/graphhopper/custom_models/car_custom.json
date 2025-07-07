@@ -4,11 +4,19 @@
     {
       "if": "car_access == false",
       "multiply_by": 0
+    },
+    {
+      "else": "",
+      "multiply_by": 1.0
     }
   ],
   "speed": [
     {
       "if": "car_access == true",
+      "limit_to": 130
+    },
+    {
+      "else": "",
       "limit_to": 130
     }
   ]
