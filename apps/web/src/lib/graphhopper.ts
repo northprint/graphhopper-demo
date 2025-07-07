@@ -103,24 +103,52 @@ export class GraphHopperClient {
         ],
         areas: {
           blocked_area: {
-            type: "FeatureCollection",
-            features: request.block_area.map((area, index) => ({
-              type: "Feature",
-              geometry: {
-                type: "Polygon",
-                coordinates: [area]
-              }
-            }))
+            type: "Feature",
+            geometry: {
+              type: "MultiPolygon",
+              coordinates: request.block_area.map(area => [area])
+            }
           }
         }
       };
 
-      body = JSON.stringify({ custom_model: customModel });
+      // POSTリクエストの場合はすべてのパラメータをボディに含める
+      body = JSON.stringify({ 
+        points: request.points,
+        profile: request.profile || 'car',
+        custom_model: customModel,
+        points_encoded: request.points_encoded !== undefined ? request.points_encoded : false,
+        locale: request.locale || 'ja',
+        instructions: request.instructions !== undefined ? request.instructions : true,
+        elevation: request.elevation !== undefined ? request.elevation : false
+      });
       headers['Content-Type'] = 'application/json';
-      console.log('Sending custom model with blocked areas:', customModel);
+      console.log('Sending POST request with custom model:', body);
+      // URLパラメータをクリア
+      params.delete('point');
+      params.delete('profile');
+      params.delete('points_encoded');
+      params.delete('locale');
+      params.delete('instructions');
+      params.delete('elevation');
     } else if (request.custom_model) {
-      body = JSON.stringify({ custom_model: request.custom_model });
+      body = JSON.stringify({ 
+        points: request.points,
+        profile: request.profile || 'car',
+        custom_model: request.custom_model,
+        points_encoded: request.points_encoded !== undefined ? request.points_encoded : false,
+        locale: request.locale || 'ja',
+        instructions: request.instructions !== undefined ? request.instructions : true,
+        elevation: request.elevation !== undefined ? request.elevation : false
+      });
       headers['Content-Type'] = 'application/json';
+      // URLパラメータをクリア
+      params.delete('point');
+      params.delete('profile');
+      params.delete('points_encoded');
+      params.delete('locale');
+      params.delete('instructions');
+      params.delete('elevation');
     }
 
     const url = `${this.baseUrl}/route?${params.toString()}`;
