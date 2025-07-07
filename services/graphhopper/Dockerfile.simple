@@ -16,6 +16,9 @@ RUN curl -L -o graphhopper.jar \
 COPY services/graphhopper/config-demo.yml config.yml
 COPY services/graphhopper/config-apprunner.yml config-apprunner.yml
 
+# カスタムモデルディレクトリをコピー
+COPY services/graphhopper/custom_models /graphhopper/custom_models
+
 # OSMデータをコピー
 COPY data/map.osm.pbf /graphhopper/data/map.osm.pbf
 

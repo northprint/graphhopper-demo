@@ -19,5 +19,9 @@
       "else": "",
       "limit_to": 5
     }
-  ]
+  ],
+  "areas": {
+    "type": "FeatureCollection",
+    "features": []
+  }
 }

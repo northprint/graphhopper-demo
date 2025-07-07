@@ -11,5 +11,9 @@
       "if": "bike_access == true",
       "limit_to": 30
     }
-  ]
+  ],
+  "areas": {
+    "type": "FeatureCollection",
+    "features": []
+  }
 }

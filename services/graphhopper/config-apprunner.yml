@@ -5,6 +5,9 @@ graphhopper:
   # グラフキャッシュの保存場所
   graph.location: /graphhopper/graph-cache
   
+  # カスタムモデルディレクトリ
+  custom_models.directory: /graphhopper/custom_models
+  
   # インポート設定
   import.osm.ignored_highways: ""
     
@@ -12,16 +15,22 @@ graphhopper:
   graph.elevation.provider: ""
   
   # エンコード値の設定（GraphHopper 9.1用）
-  graph.encoded_values: road_class, road_environment, max_speed, surface
+  graph.encoded_values: car_access, car_average_speed, bike_access, bike_average_speed, foot_access, foot_average_speed, road_class, road_environment, max_speed, surface
   
   # 有効にするプロファイル（GraphHopper 9.1用）
   profiles:
     - name: car
+      vehicle: car
       weighting: custom
-      custom_model:
-        speed:
-          - if: "true"
-            limit_to: 130
+      custom_model_files: [car_custom.json]
+    - name: bike
+      vehicle: bike
+      weighting: custom
+      custom_model_files: [bike_custom.json]
+    - name: foot
+      vehicle: foot
+      weighting: custom
+      custom_model_files: [foot_custom.json]
   
   # ルーティングの詳細設定
   routing:

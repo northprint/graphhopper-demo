@@ -91,19 +91,30 @@
     
     // ルートを計算
       try {
-        // 通行止めエリアの設定
-        let blockAreaParam = '';
+        // 通行止めエリアをポリゴンに変換
+        let blockAreaPolygons: [number, number][][] = [];
+        
         if (blockedAreas.length > 0) {
-          blockAreaParam = blockedAreas
-            .map(area => `${area.lat},${area.lng},${area.radius}`)
-            .join(';');
+          blockAreaPolygons = blockedAreas.map(area => {
+            // 円形エリアを正方形のポリゴンに変換（簡易的な実装）
+            const radiusInDegrees = area.radius / 111000; // メートルを度に変換（概算）
+            const polygon: [number, number][] = [
+              [area.lng - radiusInDegrees, area.lat - radiusInDegrees],
+              [area.lng - radiusInDegrees, area.lat + radiusInDegrees],
+              [area.lng + radiusInDegrees, area.lat + radiusInDegrees],
+              [area.lng + radiusInDegrees, area.lat - radiusInDegrees],
+              [area.lng - radiusInDegrees, area.lat - radiusInDegrees] // 閉じたポリゴン
+            ];
+            return polygon;
+          });
+          console.log('Blocked area polygons:', blockAreaPolygons);
         }
         
         const route = await graphhopper.route({
           points: markers.map(m => [m.lat, m.lng]),
           profile: profile,
           points_encoded: false,
-          block_area: blockAreaParam || undefined
+          ...(blockAreaPolygons.length > 0 ? { block_area: blockAreaPolygons } : {})
         });
         
         if (route.paths && route.paths.length > 0) {

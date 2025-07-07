@@ -8,7 +8,7 @@ export interface RouteRequest {
   calc_points?: boolean;
   points_encoded?: boolean;
   elevation?: boolean;
-  block_area?: string; // Deprecated - will be converted to custom_model
+  block_area?: [number, number][][]; // Array of polygons for blocked areas
   custom_model?: any; // Custom model for advanced routing
 }
 
@@ -80,24 +80,51 @@ export class GraphHopperClient {
       params.append('elevation', String(request.elevation));
     }
     
-    // For now, skip block_area functionality as it requires custom GraphHopper configuration
-    if (request.block_area) {
-      console.warn('Block area functionality is not currently supported by the GraphHopper API. Custom model configuration required.');
-      // Commenting out the custom_model approach for now
-      /*
+    // リクエストボディの準備
+    let body = null;
+    const headers: Record<string, string> = {
+      'Accept': 'application/json'
+    };
+
+    // 通行止めエリアがある場合はカスタムモデルとして送信
+    if (request.block_area && request.block_area.length > 0) {
       const customModel = {
-        // This would require GraphHopper server to be configured with custom model support
+        priority: [
+          {
+            if: "in_area",
+            multiply_by: 0
+          }
+        ],
+        areas: {
+          type: "FeatureCollection",
+          features: request.block_area.map((area, index) => ({
+            type: "Feature",
+            id: `blocked_area_${index}`,
+            geometry: {
+              type: "Polygon",
+              coordinates: [area]
+            },
+            properties: {}
+          }))
+        }
       };
-      params.append('custom_model', JSON.stringify(customModel));
-      */
+
+      body = JSON.stringify({ custom_model: customModel });
+      headers['Content-Type'] = 'application/json';
+      console.log('Sending custom model with blocked areas:', customModel);
     } else if (request.custom_model) {
-      params.append('custom_model', JSON.stringify(request.custom_model));
+      body = JSON.stringify({ custom_model: request.custom_model });
+      headers['Content-Type'] = 'application/json';
     }
 
     const url = `${this.baseUrl}/route?${params.toString()}`;
     console.log('GraphHopper API request:', url);
     
-    const response = await fetch(url);
+    const response = await fetch(url, {
+      method: body ? 'POST' : 'GET',
+      headers,
+      body
+    });
     
     if (!response.ok) {
       const errorBody = await response.text();
