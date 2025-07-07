@@ -4,10 +4,6 @@
     {
       "if": "foot_access == false",
       "multiply_by": 0
-    },
-    {
-      "if": "in_area_custom1",
-      "multiply_by": 0
     }
   ],
   "speed": [
