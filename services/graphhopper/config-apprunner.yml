@@ -20,15 +20,12 @@ graphhopper:
   # 有効にするプロファイル（GraphHopper 9.1用）
   profiles:
     - name: car
-      vehicle: car
       weighting: custom
       custom_model_files: [car_custom.json]
     - name: bike
-      vehicle: bike
       weighting: custom
       custom_model_files: [bike_custom.json]
     - name: foot
-      vehicle: foot
       weighting: custom
       custom_model_files: [foot_custom.json]
   

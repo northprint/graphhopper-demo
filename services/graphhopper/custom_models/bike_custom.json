@@ -4,16 +4,20 @@
     {
       "if": "bike_access == false",
       "multiply_by": 0
+    },
+    {
+      "if": "in_area_custom1",
+      "multiply_by": 0
     }
   ],
   "speed": [
     {
       "if": "bike_access == true",
       "limit_to": 30
+    },
+    {
+      "else": "",
+      "limit_to": 5
     }
-  ],
-  "areas": {
-    "type": "FeatureCollection",
-    "features": []
-  }
+  ]
 }
